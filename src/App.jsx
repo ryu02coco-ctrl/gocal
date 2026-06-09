@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, updateDoc } from "firebase/firestore";
 
@@ -256,7 +256,90 @@ function GroupEditModal({ existing, onSave, onClose }) {
 
 // ── カレンダーコンポーネント ────────────────
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
-const TIME_SLOTS = ["18:00〜", "18:30〜", "19:00〜", "19:30〜", "20:00〜"];
+// ── ドラム式時間ピッカー ────────────────────
+function TimePicker({ value, onChange }) {
+  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+  const minutes = ["00", "15", "30", "45"];
+
+  const parseTime = (t) => {
+    const m = t?.match(/(\d{2}):(\d{2})/);
+    return m ? { h: m[1], min: m[2] } : { h: "19", min: "00" };
+  };
+  const { h: selH, min: selMin } = parseTime(value);
+
+  const itemH = 40;
+
+  const DrumReel = ({ items, selected, onSelect }) => {
+    const idx = items.indexOf(selected);
+    const ref = React.useRef(null);
+
+    React.useEffect(() => {
+      if (ref.current) {
+        ref.current.scrollTop = idx * itemH;
+      }
+    }, []);
+
+    const handleScroll = (e) => {
+      const scrollTop = e.target.scrollTop;
+      const newIdx = Math.round(scrollTop / itemH);
+      if (items[newIdx] && items[newIdx] !== selected) {
+        onSelect(items[newIdx]);
+      }
+    };
+
+    return (
+      <div style={{ position: "relative", width: 64, height: itemH * 3, overflow: "hidden" }}>
+        {/* 選択ハイライト */}
+        <div style={{
+          position: "absolute", top: itemH, left: 0, right: 0, height: itemH,
+          background: COLORS.accent + "22", border: `1px solid ${COLORS.accent}44`,
+          borderRadius: 8, pointerEvents: "none", zIndex: 1,
+        }} />
+        <div
+          ref={ref}
+          onScroll={handleScroll}
+          style={{
+            height: "100%", overflowY: "scroll", scrollSnapType: "y mandatory",
+            scrollbarWidth: "none", msOverflowStyle: "none",
+          }}
+        >
+          {/* 上下のパディング用ダミー */}
+          <div style={{ height: itemH }} />
+          {items.map(item => (
+            <div
+              key={item}
+              onClick={() => onSelect(item)}
+              style={{
+                height: itemH, display: "flex", alignItems: "center", justifyContent: "center",
+                scrollSnapAlign: "start", cursor: "pointer",
+                color: item === selected ? COLORS.accent : COLORS.muted,
+                fontWeight: item === selected ? 900 : 400,
+                fontSize: item === selected ? 20 : 16,
+                transition: "all 0.15s",
+              }}
+            >{item}</div>
+          ))}
+          <div style={{ height: itemH }} />
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{
+      background: COLORS.card, borderRadius: 14, padding: "16px",
+      border: `1px solid ${COLORS.border}`, display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+    }}>
+      <div style={{ color: COLORS.muted, fontSize: 11, fontWeight: 700 }}>開始時間</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <DrumReel items={hours} selected={selH} onSelect={h => onChange(`${h}:${selMin}〜`)} />
+        <span style={{ color: COLORS.text, fontWeight: 900, fontSize: 20 }}>:</span>
+        <DrumReel items={minutes} selected={selMin} onSelect={min => onChange(`${selH}:${min}〜`)} />
+      </div>
+      <div style={{ color: COLORS.accent, fontWeight: 800, fontSize: 16 }}>{selH}:{selMin}〜</div>
+    </div>
+  );
+}
 
 function MiniCalendar({ selectedDates, onToggleDate }) {
   const now = new Date();
@@ -342,29 +425,18 @@ function TimeSelector({ dateEntry, onSetTime, onRemove }) {
   return (
     <div style={{
       background: COLORS.card, border: `1px solid ${COLORS.accent}44`,
-      borderRadius: 12, padding: "12px 14px",
-      display: "flex", alignItems: "center", gap: 10,
+      borderRadius: 14, padding: "14px",
     }}>
-      <div style={{ flex: 1 }}>
-        <div style={{ color: COLORS.text, fontWeight: 700, fontSize: 13 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        <div style={{ color: COLORS.text, fontWeight: 700, fontSize: 14 }}>
           {dateEntry.month + 1}/{dateEntry.day}（{dow}）
         </div>
-        <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
-          {TIME_SLOTS.map(t => (
-            <button key={t} onClick={() => onSetTime(dateEntry.dateKey, t)} style={{
-              padding: "5px 10px", borderRadius: 8, fontSize: 12, fontWeight: 700,
-              cursor: "pointer", fontFamily: "inherit",
-              background: dateEntry.time === t ? COLORS.accent : COLORS.surface,
-              color: dateEntry.time === t ? "#fff" : COLORS.muted,
-              border: `1px solid ${dateEntry.time === t ? COLORS.accent : COLORS.border}`,
-            }}>{t}</button>
-          ))}
-        </div>
+        <button onClick={() => onRemove(dateEntry.dateKey)} style={{
+          background: "none", border: "none", color: "#ff4d4d", fontSize: 18,
+          cursor: "pointer", padding: "4px",
+        }}>✕</button>
       </div>
-      <button onClick={() => onRemove(dateEntry.dateKey)} style={{
-        background: "none", border: "none", color: "#ff4d4d", fontSize: 18,
-        cursor: "pointer", padding: "4px",
-      }}>✕</button>
+      <TimePicker value={dateEntry.time} onChange={t => onSetTime(dateEntry.dateKey, t)} />
     </div>
   );
 }
@@ -443,15 +515,14 @@ function CreateEventModal({ groups, onSave, onClose }) {
                       <div style={{ color: COLORS.text, fontWeight: 700, fontSize: 14, marginBottom: 6 }}>
                         {sel ? "✅ " : ""}{g.name}
                       </div>
-                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
                         {g.members.map(m => (
-                          <div key={m.id} style={{
-                            width: 28, height: 28, borderRadius: 8, fontSize: 15,
-                            background: COLORS.accent + "22",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                          }}>{m.emoji}</div>
+                          <span key={m.id} style={{
+                            background: COLORS.accent + "22", borderRadius: 20,
+                            padding: "2px 8px", fontSize: 11, color: COLORS.text, fontWeight: 600,
+                          }}>{m.name}</span>
                         ))}
-                        <div style={{ color: COLORS.muted, fontSize: 12, marginLeft: 4 }}>{g.members.length}人</div>
+                        <span style={{ color: COLORS.muted, fontSize: 11 }}>{g.members.length}人</span>
                       </div>
                     </button>
                   );
@@ -564,17 +635,9 @@ function MemberSelectModal({ event, onSelect, onClose }) {
           <button key={m.id} onClick={() => onSelect(m)} style={{
             background: COLORS.card, border: `1px solid ${COLORS.border}`,
             borderRadius: 12, padding: "14px 16px", cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 14,
             textAlign: "left", fontFamily: "inherit",
           }}>
-            <div style={{
-              width: 44, height: 44, borderRadius: 12, background: COLORS.accent + "22",
-              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
-            }}>{m.emoji}</div>
-            <div>
-              <div style={{ color: COLORS.text, fontWeight: 700, fontSize: 15 }}>{m.name}</div>
-              <div style={{ color: COLORS.muted, fontSize: 12, marginTop: 2 }}>{m.age}歳　{m.job}</div>
-            </div>
+            <div style={{ color: COLORS.text, fontWeight: 700, fontSize: 15 }}>{m.name}</div>
           </button>
         ))}
       </div>
@@ -588,7 +651,7 @@ function EditDatesModal({ event, onSave, onClose }) {
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth());
   const WEEKDAYS2 = ["日","月","火","水","木","金","土"];
-  const TIME_SLOTS2 = ["18:00〜","18:30〜","19:00〜","19:30〜","20:00〜"];
+
 
   const parseExisting = () => event.dates.map(d => {
     const m = d.label.match(/^(\d+)\/(\d+)/);
@@ -695,16 +758,7 @@ function EditDatesModal({ event, onSave, onClose }) {
                         <span style={{ marginLeft: 8, fontSize: 10, color: COLORS.accent3, background: COLORS.accent3 + "22", borderRadius: 6, padding: "2px 6px" }}>回答引継ぎ</span>
                       )}
                     </div>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      {TIME_SLOTS2.map(t => (
-                        <button key={t} onClick={() => setTime(d.dateKey, t)} style={{
-                          padding: "4px 8px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                          background: d.time === t ? COLORS.accent : COLORS.surface,
-                          color: d.time === t ? "#fff" : COLORS.muted,
-                          border: `1px solid ${d.time === t ? COLORS.accent : COLORS.border}`,
-                        }}>{t}</button>
-                      ))}
-                    </div>
+                    <TimePicker value={d.time} onChange={t => setTime(d.dateKey, t)} />
                   </div>
                   <button onClick={() => removeDate(d.dateKey)} style={{ background: "none", border: "none", color: "#ff4d4d", fontSize: 18, cursor: "pointer", padding: "4px" }}>✕</button>
                 </div>
@@ -905,9 +959,8 @@ function ScheduleView({ event, onAnswerUpdate, onConfirmDate, onRevertDate, onUp
             <tr>
               <th style={{ textAlign: "left", padding: "8px 10px", color: COLORS.muted, fontWeight: 600, minWidth: 130 }}>日程</th>
               {allMembers.map(m => (
-                <th key={m.id} style={{ padding: "8px 6px", color: COLORS.muted, textAlign: "center", minWidth: 42 }}>
-                  <div style={{ fontSize: 16 }}>{m.emoji}</div>
-                  <div style={{ fontSize: 9 }}>{m.name.split(" ")[0]}</div>
+                <th key={m.id} style={{ padding: "8px 6px", color: COLORS.muted, textAlign: "center", minWidth: 42, fontSize: 9 }}>
+                  {m.name.split(" ")[0]}
                 </th>
               ))}
               <th style={{ padding: "8px 8px", color: COLORS.muted, textAlign: "center" }}>Pt</th>
@@ -1465,16 +1518,7 @@ function CalendarView({ events, onSelect }) {
                       <span>📅</span>
                       <span style={{ color: cfg.color, fontSize: 13, fontWeight: 700 }}>{ev.confirmedDate}</span>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      {allM.slice(0, 6).map((m, i) => (
-                        <div key={m.id} style={{
-                          width: 26, height: 26, borderRadius: 7, fontSize: 13,
-                          background: i < ev.myGroup.length ? COLORS.accent + "22" : COLORS.accent2 + "22",
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                        }}>{m.emoji}</div>
-                      ))}
-                      <span style={{ color: COLORS.muted, fontSize: 11, marginLeft: 2 }}>{allM.length}名</span>
-                    </div>
+                    <div style={{ color: COLORS.muted, fontSize: 11 }}>{ev.myGroup.length}名</div>
                   </div>
                 );
               })}
@@ -1616,7 +1660,7 @@ function HomeView({ events, groups, onSelect, onCreateEvent, onDeleteEvent }) {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                 <div style={{ flex: 1 }} onClick={e => { e.stopPropagation(); onSelect(event); }}>
                   <div style={{ fontSize: 16, fontWeight: 800, color: COLORS.text }}>{event.title}</div>
-                  <div style={{ color: COLORS.muted, fontSize: 11, marginTop: 2 }}>作成日 {event.createdAt}　{allM.length}名</div>
+                  <div style={{ color: COLORS.muted, fontSize: 11, marginTop: 2 }}>作成日 {event.createdAt}　{event.myGroup.length}名</div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <Badge color={cfg.color}>{cfg.icon} {event.status}</Badge>
