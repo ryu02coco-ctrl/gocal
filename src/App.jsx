@@ -762,6 +762,41 @@ function EditDatesModal({ event, onSave, onClose }) {
   );
 }
  
+// ── 削除確認モーダル ────────────────────────
+function DeleteConfirmModal({ title, onConfirm, onClose }) {
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "#000c", zIndex: 300,
+      display: "flex", alignItems: "center", justifyContent: "center", padding: "20px",
+    }}>
+      <div style={{
+        background: COLORS.surface, borderRadius: 20, padding: "28px 24px",
+        width: "100%", maxWidth: 360, border: `1px solid ${COLORS.border}`,
+      }}>
+        <div style={{ fontSize: 32, textAlign: "center", marginBottom: 14 }}>🗑️</div>
+        <div style={{ color: COLORS.text, fontWeight: 800, fontSize: 16, textAlign: "center", marginBottom: 8 }}>
+          削除しますか？
+        </div>
+        <div style={{ color: COLORS.muted, fontSize: 13, textAlign: "center", marginBottom: 24 }}>
+          「{title}」を削除します。この操作は取り消せません。
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <button onClick={onClose} style={{
+            padding: "14px", borderRadius: 12, background: COLORS.card,
+            border: `1px solid ${COLORS.border}`, color: COLORS.text,
+            fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit",
+          }}>キャンセル</button>
+          <button onClick={onConfirm} style={{
+            padding: "14px", borderRadius: 12, background: "#ff4d4d",
+            border: "none", color: "#fff",
+            fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit",
+          }}>削除する</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+ 
 // ── 日程確定モーダル ────────────────────────
 function ConfirmDateModal({ scores, onConfirm, onClose }) {
   const maxScore = Math.max(...scores.map(s => s.score));
@@ -1134,8 +1169,9 @@ function SplitView({ event }) {
 }
  
 // ── 詳細画面 ────────────────────────────────
-function DetailView({ event, onBack, onAnswerUpdate, onAddTheirMember, onConfirmDate, onRevertDate, onUpdateDates }) {
+function DetailView({ event, onBack, onAnswerUpdate, onAddTheirMember, onConfirmDate, onRevertDate, onUpdateDates, onDeleteEvent }) {
   const [activeTab, setActiveTab] = useState("schedule");
+  const [showDelete, setShowDelete] = useState(false);
   const cfg = STATUS_CONFIG[event.status];
  
   return (
@@ -1144,12 +1180,18 @@ function DetailView({ event, onBack, onAnswerUpdate, onAddTheirMember, onConfirm
         padding: "16px 16px 12px", borderBottom: `1px solid ${COLORS.border}`,
         background: COLORS.surface, position: "sticky", top: 0, zIndex: 10,
       }}>
-        <button onClick={onBack} style={{
-          background: COLORS.card, border: `1px solid ${COLORS.border}`,
-          borderRadius: 10, color: COLORS.text, fontSize: 13, fontWeight: 700,
-          cursor: "pointer", padding: "7px 14px", marginBottom: 10,
-          fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6,
-        }}>← 一覧に戻る</button>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <button onClick={onBack} style={{
+            background: COLORS.card, border: `1px solid ${COLORS.border}`,
+            borderRadius: 10, color: COLORS.text, fontSize: 13, fontWeight: 700,
+            cursor: "pointer", padding: "7px 14px",
+            fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6,
+          }}>← 一覧に戻る</button>
+          <button onClick={() => setShowDelete(true)} style={{
+            background: "none", border: "none", color: COLORS.muted,
+            fontSize: 20, cursor: "pointer", padding: "4px",
+          }}>🗑️</button>
+        </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
             <div style={{ fontSize: 20, fontWeight: 900 }}>{event.title}</div>
@@ -1172,6 +1214,13 @@ function DetailView({ event, onBack, onAnswerUpdate, onAddTheirMember, onConfirm
         {activeTab === "members" && <MembersView event={event} onAddTheirMember={m => onAddTheirMember(event.id, m)} />}
         {activeTab === "split" && <SplitView event={event} />}
       </div>
+      {showDelete && (
+        <DeleteConfirmModal
+          title={event.title}
+          onConfirm={() => { onDeleteEvent(event.id); onBack(); }}
+          onClose={() => setShowDelete(false)}
+        />
+      )}
     </div>
   );
 }
@@ -1406,8 +1455,9 @@ function CalendarView({ events, onSelect }) {
  
  
 // ── グループ管理画面 ─────────────────────────
-function GroupsView({ groups, onCreateGroup }) {
+function GroupsView({ groups, onCreateGroup, onDeleteGroup }) {
   const [showCreate, setShowCreate] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   return (
     <div style={{ padding: "16px" }}>
       <div style={{ display: "grid", gap: 12 }}>
@@ -1416,7 +1466,13 @@ function GroupsView({ groups, onCreateGroup }) {
             background: COLORS.card, border: `1px solid ${COLORS.border}`,
             borderRadius: 16, padding: "16px",
           }}>
-            <div style={{ fontWeight: 800, fontSize: 16, color: COLORS.text, marginBottom: 10 }}>{g.name}</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div style={{ fontWeight: 800, fontSize: 16, color: COLORS.text }}>{g.name}</div>
+              <button onClick={() => setDeleteTarget(g)} style={{
+                background: "none", border: "none", color: COLORS.muted,
+                fontSize: 16, cursor: "pointer", padding: "4px",
+              }}>🗑️</button>
+            </div>
             <div style={{ display: "grid", gap: 8 }}>
               {g.members.map(m => (
                 <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -1445,15 +1501,23 @@ function GroupsView({ groups, onCreateGroup }) {
           onClose={() => setShowCreate(false)}
         />
       )}
+      {deleteTarget && (
+        <DeleteConfirmModal
+          title={deleteTarget.name}
+          onConfirm={() => { onDeleteGroup(deleteTarget.id); setDeleteTarget(null); }}
+          onClose={() => setDeleteTarget(null)}
+        />
+      )}
       <div style={{ height: 120 }} />
     </div>
   );
 }
  
 // ── ホーム一覧 ───────────────────────────────
-function HomeView({ events, groups, onSelect, onCreateEvent }) {
+function HomeView({ events, groups, onSelect, onCreateEvent, onDeleteEvent }) {
   const [filter, setFilter] = useState("すべて");
   const [showCreate, setShowCreate] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const filters = ["すべて", "調整中", "日程確定", "完了"];
   const STATUS_ORDER = { "調整中": 0, "日程確定": 1, "完了": 2 };
   const filtered = (filter === "すべて" ? events.filter(e => e.status !== "完了") : events.filter(e => e.status === filter))
@@ -1507,11 +1571,17 @@ function HomeView({ events, groups, onSelect, onCreateEvent }) {
               borderLeft: `3px solid ${cfg.color}`,
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-                <div>
+                <div style={{ flex: 1 }} onClick={e => { e.stopPropagation(); onSelect(event); }}>
                   <div style={{ fontSize: 16, fontWeight: 800, color: COLORS.text }}>{event.title}</div>
                   <div style={{ color: COLORS.muted, fontSize: 11, marginTop: 2 }}>作成日 {event.createdAt}　{allM.length}名</div>
                 </div>
-                <Badge color={cfg.color}>{cfg.icon} {event.status}</Badge>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Badge color={cfg.color}>{cfg.icon} {event.status}</Badge>
+                  <button onClick={e => { e.stopPropagation(); setDeleteTarget(event); }} style={{
+                    background: "none", border: "none", color: COLORS.muted,
+                    fontSize: 16, cursor: "pointer", padding: "4px", lineHeight: 1,
+                  }}>🗑️</button>
+                </div>
               </div>
               {event.theirGroup.length === 0 && (
                 <div style={{
@@ -1592,6 +1662,13 @@ function HomeView({ events, groups, onSelect, onCreateEvent }) {
           onClose={() => setShowCreate(false)}
         />
       )}
+      {deleteTarget && (
+        <DeleteConfirmModal
+          title={deleteTarget.title}
+          onConfirm={() => { onDeleteEvent(deleteTarget.id); setDeleteTarget(null); }}
+          onClose={() => setDeleteTarget(null)}
+        />
+      )}
       <div style={{ height: 120 }} />
     </div>
   );
@@ -1644,6 +1721,14 @@ export default function App() {
       confirmedDate: ev.status === "日程確定" ? null : ev.confirmedDate,
       dates: newDates,
     }));
+  };
+ 
+  const handleDeleteEvent = (eventId) => {
+    setEvents(prev => prev.filter(ev => ev.id !== eventId));
+  };
+ 
+  const handleDeleteGroup = (groupId) => {
+    setGroups(prev => prev.filter(g => g.id !== groupId));
   };
  
   const handleRevertDate = (eventId) => {
@@ -1735,6 +1820,7 @@ export default function App() {
           onConfirmDate={handleConfirmDate}
           onRevertDate={handleRevertDate}
           onUpdateDates={handleUpdateDates}
+          onDeleteEvent={handleDeleteEvent}
         />
       ) : page === "home" ? (
         <HomeView
@@ -1742,6 +1828,7 @@ export default function App() {
           groups={groups}
           onSelect={e => setSelectedEventId(e.id)}
           onCreateEvent={e => setEvents(p => [e, ...p])}
+          onDeleteEvent={handleDeleteEvent}
         />
       ) : page === "calendar" ? (
         <CalendarView
@@ -1752,6 +1839,7 @@ export default function App() {
         <GroupsView
           groups={groups}
           onCreateGroup={g => setGroups(p => [...p, g])}
+          onDeleteGroup={handleDeleteGroup}
         />
       )}
  
