@@ -187,88 +187,67 @@ const PrimaryBtn = ({ children, onClick, disabled }) => (
   }}>{children}</button>
 );
 
-// ── グループ作成モーダル ────────────────────
-function CreateGroupModal({ onSave, onClose }) {
-  const [name, setName] = useState("");
-  const [members, setMembers] = useState([{ id: genId(), name: "", age: "", job: "", emoji: "😊" }]);
-  const EMOJIS = ["😊","😎","🤩","🥳","😇","🫡","🤓","🥰","😄","🌟","🔥","💪","⚡","🎯","🏃"];
+// ── グループ作成・編集モーダル ──────────────
+function GroupEditModal({ existing, onSave, onClose }) {
+  const isEdit = !!existing;
+  const [name, setName] = useState(existing?.name || "");
+  const [members, setMembers] = useState(
+    existing?.members.map(m => ({ ...m })) || [{ id: genId(), name: "" }]
+  );
 
-  const addMember = () => setMembers(p => [...p, { id: genId(), name: "", age: "", job: "", emoji: "😊" }]);
+  const addMember = () => setMembers(p => [...p, { id: genId(), name: "" }]);
   const removeMember = (id) => setMembers(p => p.filter(m => m.id !== id));
-  const updateMember = (id, field, val) =>
-    setMembers(p => p.map(m => m.id === id ? { ...m, [field]: val } : m));
-
+  const updateName = (id, val) => setMembers(p => p.map(m => m.id === id ? { ...m, name: val } : m));
   const canSave = name.trim() && members.every(m => m.name.trim());
 
-  return (
-    <BottomSheet title="グループを作成" subtitle="自分側のメンバーを登録します" onClose={onClose}>
-      <div style={{ display: "grid", gap: 16 }}>
-        <TextInput label="グループ名" value={name} onChange={setName} placeholder="例：田中チーム🍻" />
+  const memberInputStyle = {
+    width: "100%", background: COLORS.surface, border: `1px solid ${COLORS.border}`,
+    borderRadius: 10, padding: "11px 14px", color: COLORS.text, fontSize: 14,
+    fontFamily: "inherit", outline: "none", boxSizing: "border-box",
+  };
 
+  return (
+    <BottomSheet
+      title={isEdit ? "グループを編集" : "グループを作成"}
+      subtitle="メンバーの名前を入力してください"
+      onClose={onClose}
+    >
+      <div style={{ display: "grid", gap: 16 }}>
+        <TextInput label="グループ名" value={name} onChange={setName} placeholder="例：田中チーム" />
         <div>
           <div style={{ color: COLORS.muted, fontSize: 11, fontWeight: 700, marginBottom: 10 }}>
             メンバー（{members.length}人）
           </div>
-          <div style={{ display: "grid", gap: 10 }}>
+          <div style={{ display: "grid", gap: 8 }}>
             {members.map((m, i) => (
-              <div key={m.id} style={{
-                background: COLORS.card, border: `1px solid ${COLORS.border}`,
-                borderRadius: 12, padding: "14px",
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                  <div style={{ color: COLORS.text, fontSize: 13, fontWeight: 700 }}>メンバー {i + 1}</div>
-                  {members.length > 1 && (
-                    <button onClick={() => removeMember(m.id)} style={{
-                      background: "none", border: "none", color: "#ff4d4d",
-                      fontSize: 12, cursor: "pointer", fontFamily: "inherit",
-                    }}>削除</button>
-                  )}
-                </div>
-                {/* 絵文字選択 */}
-                <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-                  {EMOJIS.map(e => (
-                    <button key={e} onClick={() => updateMember(m.id, "emoji", e)} style={{
-                      width: 32, height: 32, borderRadius: 8, fontSize: 18,
-                      background: m.emoji === e ? COLORS.accent + "33" : COLORS.surface,
-                      border: `1px solid ${m.emoji === e ? COLORS.accent : COLORS.border}`,
-                      cursor: "pointer",
-                    }}>{e}</button>
-                  ))}
-                </div>
-                <div style={{ display: "grid", gap: 8 }}>
-                  <input value={m.name} onChange={e => updateMember(m.id, "name", e.target.value)}
-                    placeholder="名前（必須）" style={{
-                      width: "100%", background: COLORS.surface, border: `1px solid ${COLORS.border}`,
-                      borderRadius: 8, padding: "9px 12px", color: COLORS.text, fontSize: 13,
-                      fontFamily: "inherit", outline: "none", boxSizing: "border-box",
-                    }} />
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                    <input value={m.age} onChange={e => updateMember(m.id, "age", e.target.value)}
-                      placeholder="年齢" type="number" style={{
-                        background: COLORS.surface, border: `1px solid ${COLORS.border}`,
-                        borderRadius: 8, padding: "9px 12px", color: COLORS.text, fontSize: 13,
-                        fontFamily: "inherit", outline: "none",
-                      }} />
-                    <input value={m.job} onChange={e => updateMember(m.id, "job", e.target.value)}
-                      placeholder="職業" style={{
-                        background: COLORS.surface, border: `1px solid ${COLORS.border}`,
-                        borderRadius: 8, padding: "9px 12px", color: COLORS.text, fontSize: 13,
-                        fontFamily: "inherit", outline: "none",
-                      }} />
-                  </div>
-                </div>
+              <div key={m.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input
+                  value={m.name}
+                  onChange={e => updateName(m.id, e.target.value)}
+                  placeholder={`メンバー ${i + 1}の名前`}
+                  style={{ ...memberInputStyle, flex: 1 }}
+                />
+                {members.length > 1 && (
+                  <button onClick={() => removeMember(m.id)} style={{
+                    background: COLORS.card, border: `1px solid ${COLORS.border}`,
+                    borderRadius: 8, color: "#ff4d4d", fontSize: 14,
+                    padding: "10px 12px", cursor: "pointer",
+                  }}>✕</button>
+                )}
               </div>
             ))}
           </div>
           <button onClick={addMember} style={{
-            width: "100%", marginTop: 10, padding: "12px", borderRadius: 10,
+            width: "100%", marginTop: 8, padding: "12px", borderRadius: 10,
             background: "transparent", border: `1.5px dashed ${COLORS.border}`,
             color: COLORS.muted, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
           }}>＋ メンバーを追加</button>
         </div>
-
-        <PrimaryBtn onClick={() => canSave && onSave({ id: genId(), name, members })} disabled={!canSave}>
-          グループを保存
+        <PrimaryBtn
+          onClick={() => canSave && onSave({ id: existing?.id || genId(), name, members })}
+          disabled={!canSave}
+        >
+          {isEdit ? "変更を保存する" : "グループを作成する"}
         </PrimaryBtn>
       </div>
     </BottomSheet>
@@ -523,48 +502,12 @@ function CreateEventModal({ groups, onSave, onClose }) {
 // ── 相手メンバー追加モーダル ────────────────
 function AddTheirMemberModal({ onSave, onClose }) {
   const [name, setName] = useState("");
-  const [age, setAge] = useState("");
-  const [job, setJob] = useState("");
-  const [emoji, setEmoji] = useState("🌸");
-  const EMOJIS = ["🌸","💫","✨","🎀","🌺","🦋","🌙","⭐","🍀","🎵","💎","🌈","🦄","🍓","🌻"];
-
   const canSave = name.trim();
   return (
-    <BottomSheet title="相手メンバーを追加" subtitle="相手グループのメンバーを入力します" onClose={onClose}>
-      <div style={{ display: "grid", gap: 14 }}>
-        <div>
-          <div style={{ color: COLORS.muted, fontSize: 11, fontWeight: 700, marginBottom: 8 }}>絵文字</div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {EMOJIS.map(e => (
-              <button key={e} onClick={() => setEmoji(e)} style={{
-                width: 36, height: 36, borderRadius: 8, fontSize: 20,
-                background: emoji === e ? COLORS.accent2 + "33" : COLORS.card,
-                border: `1px solid ${emoji === e ? COLORS.accent2 : COLORS.border}`,
-                cursor: "pointer",
-              }}>{e}</button>
-            ))}
-          </div>
-        </div>
+    <BottomSheet title="相手メンバーを追加" subtitle="名前を入力してください" onClose={onClose}>
+      <div style={{ display: "grid", gap: 16 }}>
         <TextInput label="名前（必須）" value={name} onChange={setName} placeholder="例：佐藤 葵" />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <div>
-            <div style={{ color: COLORS.muted, fontSize: 11, fontWeight: 700, marginBottom: 6 }}>年齢</div>
-            <input value={age} onChange={e => setAge(e.target.value)} placeholder="25" type="number" style={{
-              width: "100%", background: COLORS.card, border: `1px solid ${COLORS.border}`,
-              borderRadius: 10, padding: "11px 14px", color: COLORS.text, fontSize: 14,
-              fontFamily: "inherit", outline: "none", boxSizing: "border-box",
-            }} />
-          </div>
-          <div>
-            <div style={{ color: COLORS.muted, fontSize: 11, fontWeight: 700, marginBottom: 6 }}>職業</div>
-            <input value={job} onChange={e => setJob(e.target.value)} placeholder="看護師" style={{
-              width: "100%", background: COLORS.card, border: `1px solid ${COLORS.border}`,
-              borderRadius: 10, padding: "11px 14px", color: COLORS.text, fontSize: 14,
-              fontFamily: "inherit", outline: "none", boxSizing: "border-box",
-            }} />
-          </div>
-        </div>
-        <PrimaryBtn onClick={() => canSave && onSave({ id: genId(), name, age: parseInt(age) || "", job, emoji })} disabled={!canSave}>
+        <PrimaryBtn onClick={() => canSave && onSave({ id: genId(), name })} disabled={!canSave}>
           追加する
         </PrimaryBtn>
       </div>
@@ -1043,6 +986,87 @@ function ScheduleView({ event, onAnswerUpdate, onConfirmDate, onRevertDate, onUp
   );
 }
 
+// ── 出欠ビュー ──────────────────────────────
+function AttendanceView({ event, onUpdateAttendance }) {
+  const allMembers = [...event.myGroup, ...event.theirGroup];
+
+  // 確定日の回答から自動セット（初期値）
+  const getInitialStatus = (m) => {
+    if (event.attendance && event.attendance[m.id] !== undefined) {
+      return event.attendance[m.id];
+    }
+    if (!event.confirmedDate) return "未定";
+    const confirmedDateObj = event.dates?.find(d => d.label === event.confirmedDate);
+    if (!confirmedDateObj) return "未定";
+    const ans = confirmedDateObj.answers?.[m.id];
+    if (ans === "○") return "参加";
+    if (ans === "×") return "不参加";
+    return "未定";
+  };
+
+  const STATUS_OPTIONS = ["参加", "不参加", "未定"];
+  const statusColor = (s) => s === "参加" ? COLORS.accent3 : s === "不参加" ? "#ff4d4d" : COLORS.muted;
+
+  const attendance = event.attendance || {};
+  const counts = {
+    参加: allMembers.filter(m => getInitialStatus(m) === "参加").length,
+    不参加: allMembers.filter(m => getInitialStatus(m) === "不参加").length,
+    未定: allMembers.filter(m => getInitialStatus(m) === "未定").length,
+  };
+
+  return (
+    <div>
+      {/* サマリー */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20 }}>
+        {[["参加", COLORS.accent3], ["不参加", "#ff4d4d"], ["未定", COLORS.muted]].map(([label, color]) => (
+          <div key={label} style={{
+            background: COLORS.card, border: `1px solid ${COLORS.border}`,
+            borderRadius: 12, padding: "12px", textAlign: "center",
+          }}>
+            <div style={{ color, fontSize: 22, fontWeight: 900 }}>{counts[label]}</div>
+            <div style={{ color: COLORS.muted, fontSize: 11, marginTop: 2 }}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* メンバーごとの出欠 */}
+      {[
+        { label: "自分側 🫂", data: event.myGroup },
+        { label: "相手側 💫", data: event.theirGroup },
+      ].map(({ label, data }) => (
+        <div key={label} style={{ marginBottom: 16 }}>
+          <div style={{ color: COLORS.muted, fontSize: 11, fontWeight: 700, marginBottom: 8 }}>{label}</div>
+          <div style={{ display: "grid", gap: 8 }}>
+            {data.map(m => {
+              const status = getInitialStatus(m);
+              return (
+                <div key={m.id} style={{
+                  background: COLORS.card, border: `1px solid ${COLORS.border}`,
+                  borderRadius: 12, padding: "12px 14px",
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                }}>
+                  <span style={{ color: COLORS.text, fontWeight: 700, fontSize: 14 }}>{m.name}</span>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {STATUS_OPTIONS.map(opt => (
+                      <button key={opt} onClick={() => onUpdateAttendance(event.id, m.id, opt)} style={{
+                        padding: "5px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+                        cursor: "pointer", fontFamily: "inherit",
+                        background: status === opt ? statusColor(opt) + "33" : COLORS.surface,
+                        color: status === opt ? statusColor(opt) : COLORS.muted,
+                        border: `1px solid ${status === opt ? statusColor(opt) : COLORS.border}`,
+                      }}>{opt}</button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── メンバービュー（相手追加ボタン付き） ─────
 function MembersView({ event, onAddTheirMember }) {
   const [showAdd, setShowAdd] = useState(false);
@@ -1072,21 +1096,12 @@ function MembersView({ event, onAddTheirMember }) {
               まだメンバーがいません
             </div>
           ) : (
-            <div style={{ display: "grid", gap: 8 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {data.map(m => (
-                <div key={m.id} style={{
-                  background: COLORS.card, border: `1px solid ${COLORS.border}`,
-                  borderRadius: 12, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12,
-                }}>
-                  <div style={{
-                    width: 40, height: 40, borderRadius: 10, background: color + "22",
-                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
-                  }}>{m.emoji}</div>
-                  <div>
-                    <div style={{ color: COLORS.text, fontWeight: 700, fontSize: 14 }}>{m.name}</div>
-                    <div style={{ color: COLORS.muted, fontSize: 11, marginTop: 2 }}>{m.age}歳　{m.job}</div>
-                  </div>
-                </div>
+                <span key={m.id} style={{
+                  background: color + "18", border: `1px solid ${color}33`,
+                  borderRadius: 20, padding: "6px 14px", color: COLORS.text, fontSize: 14, fontWeight: 600,
+                }}>{m.name}</span>
               ))}
             </div>
           )}
@@ -1184,7 +1199,7 @@ function SplitView({ event }) {
 }
 
 // ── 詳細画面 ────────────────────────────────
-function DetailView({ event, onBack, onAnswerUpdate, onAddTheirMember, onConfirmDate, onRevertDate, onUpdateDates, onDeleteEvent }) {
+function DetailView({ event, onBack, onAnswerUpdate, onAddTheirMember, onConfirmDate, onRevertDate, onUpdateDates, onDeleteEvent, onUpdateAttendance }) {
   const [activeTab, setActiveTab] = useState("schedule");
   const [showDelete, setShowDelete] = useState(false);
   const cfg = STATUS_CONFIG[event.status];
@@ -1217,9 +1232,12 @@ function DetailView({ event, onBack, onAnswerUpdate, onAddTheirMember, onConfirm
           <Badge color={cfg.color}>{cfg.icon} {event.status}</Badge>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 4, padding: "10px 12px", background: COLORS.surface, borderBottom: `1px solid ${COLORS.border}` }}>
+      <div style={{ display: "flex", gap: 4, padding: "10px 12px", background: COLORS.surface, borderBottom: `1px solid ${COLORS.border}`, overflowX: "auto" }}>
         <Tab label="📅 日程調整" active={activeTab === "schedule"} onClick={() => setActiveTab("schedule")} />
         <Tab label="👥 メンバー" active={activeTab === "members"} onClick={() => setActiveTab("members")} />
+        {(event.status === "日程確定" || event.status === "完了") && (
+          <Tab label="✅ 出欠" active={activeTab === "attendance"} onClick={() => setActiveTab("attendance")} />
+        )}
         <Tab label="💰 割り勘" active={activeTab === "split"} onClick={() => setActiveTab("split")} />
       </div>
       <div style={{ padding: "18px 16px" }}>
@@ -1227,6 +1245,7 @@ function DetailView({ event, onBack, onAnswerUpdate, onAddTheirMember, onConfirm
           <ScheduleView event={event} onAnswerUpdate={onAnswerUpdate} onConfirmDate={onConfirmDate} onRevertDate={onRevertDate} onUpdateDates={onUpdateDates} />
         )}
         {activeTab === "members" && <MembersView event={event} onAddTheirMember={m => onAddTheirMember(event.id, m)} />}
+        {activeTab === "attendance" && <AttendanceView event={event} onUpdateAttendance={onUpdateAttendance} />}
         {activeTab === "split" && <SplitView event={event} />}
       </div>
       {showDelete && (
@@ -1470,8 +1489,9 @@ function CalendarView({ events, onSelect }) {
 
 
 // ── グループ管理画面 ─────────────────────────
-function GroupsView({ groups, onCreateGroup, onDeleteGroup }) {
+function GroupsView({ groups, onCreateGroup, onDeleteGroup, onUpdateGroup }) {
   const [showCreate, setShowCreate] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   return (
     <div style={{ padding: "16px" }}>
@@ -1483,23 +1503,24 @@ function GroupsView({ groups, onCreateGroup, onDeleteGroup }) {
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
               <div style={{ fontWeight: 800, fontSize: 16, color: COLORS.text }}>{g.name}</div>
-              <button onClick={() => setDeleteTarget(g)} style={{
-                background: "none", border: "none", color: COLORS.muted,
-                fontSize: 16, cursor: "pointer", padding: "4px",
-              }}>🗑️</button>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button onClick={() => setEditTarget(g)} style={{
+                  background: COLORS.surface, border: `1px solid ${COLORS.border}`,
+                  borderRadius: 8, color: COLORS.muted, fontSize: 12, fontWeight: 700,
+                  padding: "5px 10px", cursor: "pointer", fontFamily: "inherit",
+                }}>✏️ 編集</button>
+                <button onClick={() => setDeleteTarget(g)} style={{
+                  background: "none", border: "none", color: COLORS.muted,
+                  fontSize: 16, cursor: "pointer", padding: "4px",
+                }}>🗑️</button>
+              </div>
             </div>
-            <div style={{ display: "grid", gap: 8 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {g.members.map(m => (
-                <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{
-                    width: 34, height: 34, borderRadius: 8, background: COLORS.accent + "22",
-                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
-                  }}>{m.emoji}</div>
-                  <div>
-                    <div style={{ color: COLORS.text, fontSize: 13, fontWeight: 600 }}>{m.name}</div>
-                    <div style={{ color: COLORS.muted, fontSize: 11 }}>{m.age}歳　{m.job}</div>
-                  </div>
-                </div>
+                <span key={m.id} style={{
+                  background: COLORS.accent + "18", border: `1px solid ${COLORS.accent}33`,
+                  borderRadius: 20, padding: "4px 12px", color: COLORS.text, fontSize: 13, fontWeight: 600,
+                }}>{m.name}</span>
               ))}
             </div>
           </div>
@@ -1511,9 +1532,16 @@ function GroupsView({ groups, onCreateGroup, onDeleteGroup }) {
         }}>＋ 新しいグループを作成</button>
       </div>
       {showCreate && (
-        <CreateGroupModal
+        <GroupEditModal
           onSave={g => { onCreateGroup(g); setShowCreate(false); }}
           onClose={() => setShowCreate(false)}
+        />
+      )}
+      {editTarget && (
+        <GroupEditModal
+          existing={editTarget}
+          onSave={g => { onUpdateGroup(g); setEditTarget(null); }}
+          onClose={() => setEditTarget(null)}
         />
       )}
       {deleteTarget && (
@@ -1598,16 +1626,7 @@ function HomeView({ events, groups, onSelect, onCreateEvent, onDeleteEvent }) {
                   }}>🗑️</button>
                 </div>
               </div>
-              {event.theirGroup.length === 0 && (
-                <div style={{
-                  background: COLORS.accent + "12", border: `1px solid ${COLORS.accent}30`,
-                  borderRadius: 10, padding: "8px 12px", marginBottom: 10,
-                  display: "flex", alignItems: "center", gap: 8,
-                }}>
-                  <span>👥</span>
-                  <span style={{ color: COLORS.accent, fontSize: 12, fontWeight: 600 }}>相手グループ未登録</span>
-                </div>
-              )}
+
               {event.confirmedDate ? (
                 <div style={{
                   background: cfg.color + "15", border: `1px solid ${cfg.color}33`,
@@ -1762,6 +1781,17 @@ export default function App() {
     await deleteDoc(doc(db, "groups", String(groupId)));
   };
 
+  const handleUpdateGroup = async (group) => {
+    await setDoc(doc(db, "groups", String(group.id)), group);
+  };
+
+  const handleUpdateAttendance = async (eventId, memberId, status) => {
+    const ev = events.find(e => e.id === eventId);
+    if (!ev) return;
+    const newAttendance = { ...(ev.attendance || {}), [memberId]: status };
+    await updateDoc(doc(db, "events", String(eventId)), { attendance: newAttendance });
+  };
+
   const handleRevertDate = async (eventId) => {
     await updateDoc(doc(db, "events", String(eventId)), { status: "調整中", confirmedDate: null });
   };
@@ -1859,6 +1889,7 @@ export default function App() {
           onRevertDate={handleRevertDate}
           onUpdateDates={handleUpdateDates}
           onDeleteEvent={handleDeleteEvent}
+          onUpdateAttendance={handleUpdateAttendance}
         />
       ) : page === "home" ? (
         <HomeView
@@ -1882,6 +1913,7 @@ export default function App() {
             await setDoc(doc(db, "groups", String(g.id)), g);
           }}
           onDeleteGroup={handleDeleteGroup}
+          onUpdateGroup={handleUpdateGroup}
         />
       )}
 
