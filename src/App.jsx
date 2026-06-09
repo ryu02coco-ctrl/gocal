@@ -1660,7 +1660,19 @@ function HomeView({ events, groups, onSelect, onCreateEvent, onDeleteEvent }) {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                 <div style={{ flex: 1 }} onClick={e => { e.stopPropagation(); onSelect(event); }}>
                   <div style={{ fontSize: 16, fontWeight: 800, color: COLORS.text }}>{event.title}</div>
-                  <div style={{ color: COLORS.muted, fontSize: 11, marginTop: 2 }}>作成日 {event.createdAt}　{event.myGroup.length}名</div>
+                  <div style={{ color: COLORS.muted, fontSize: 11, marginTop: 2 }}>
+                    作成日 {event.createdAt}　
+                    {(() => {
+                      const allM = [...event.myGroup, ...event.theirGroup];
+                      const attendCount = allM.filter(m =>
+                        event.attendance?.[m.id] === "参加" ||
+                        (!event.attendance?.[m.id] && event.dates?.find(d => d.label === event.confirmedDate)?.answers?.[m.id] === "○")
+                      ).length;
+                      return event.status === "日程確定" || event.status === "完了"
+                        ? `参加 ${attendCount}名`
+                        : `${event.myGroup.length}名`;
+                    })()}
+                  </div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <Badge color={cfg.color}>{cfg.icon} {event.status}</Badge>
