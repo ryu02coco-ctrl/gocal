@@ -1,17 +1,17 @@
 import { useState, useEffect } from "react";
-
+ 
 const COLORS = {
   bg: "#0f0f13", surface: "#1a1a22", card: "#22222e",
   accent: "#ff6b6b", accent2: "#ffd93d", accent3: "#6bcb77",
   text: "#f0f0f5", muted: "#888899", border: "#2e2e3e",
 };
-
+ 
 const STATUS_CONFIG = {
   "調整中": { color: COLORS.accent2, icon: "🔄" },
   "日程確定": { color: COLORS.accent3, icon: "✅" },
   "完了": { color: COLORS.muted, icon: "🏁" },
 };
-
+ 
 // ── 初期データ ──────────────────────────────
 const INITIAL_GROUPS = [
   {
@@ -29,7 +29,7 @@ const INITIAL_GROUPS = [
     ],
   },
 ];
-
+ 
 const INITIAL_EVENTS = [
   {
     id: 3, title: "先月の合コン🎊", status: "日程確定", createdAt: "5/10",
@@ -65,17 +65,17 @@ const INITIAL_EVENTS = [
     ],
   },
 ];
-
+ 
 // ── ユーティリティ ──────────────────────────
 let _id = 200;
 const genId = () => ++_id;
-
+ 
 const answerColor = (a) =>
   a === "○" ? COLORS.accent3 : a === "△" ? COLORS.accent2 : a === "×" ? "#ff4d4d" : COLORS.muted;
-
+ 
 const countScore = (answers) =>
   Object.values(answers).reduce((s, a) => s + (a === "○" ? 2 : a === "△" ? 1 : 0), 0);
-
+ 
 const getResponseRate = (event) => {
   const all = [...event.myGroup, ...event.theirGroup];
   const total = all.length * event.dates.length;
@@ -83,12 +83,12 @@ const getResponseRate = (event) => {
     s + Object.values(d.answers).filter(a => a && a !== "−").length, 0);
   return total > 0 ? Math.round((answered / total) * 100) : 0;
 };
-
+ 
 const today = () => {
   const d = new Date();
   return `${d.getMonth() + 1}/${d.getDate()}`;
 };
-
+ 
 // 確定日が過去なら「完了」に自動移行
 // 確定日ラベル例: "6/14（土）19:00〜" → 年は現在年で補完
 const isConfirmedDatePast = (confirmedDate) => {
@@ -100,14 +100,14 @@ const isConfirmedDatePast = (confirmedDate) => {
   const eventDate = new Date(year, parseInt(match[1]) - 1, parseInt(match[2]) + 1); // 翌日0時以降で完了
   return now >= eventDate;
 };
-
+ 
 const applyAutoComplete = (events) =>
   events.map(ev =>
     ev.status === "日程確定" && isConfirmedDatePast(ev.confirmedDate)
       ? { ...ev, status: "完了" }
       : ev
   );
-
+ 
 // ── 共通UIパーツ ────────────────────────────
 const Badge = ({ children, color }) => (
   <span style={{
@@ -115,7 +115,7 @@ const Badge = ({ children, color }) => (
     borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 700,
   }}>{children}</span>
 );
-
+ 
 const Tab = ({ label, active, onClick }) => (
   <button onClick={onClick} style={{
     background: active ? COLORS.accent : "transparent",
@@ -124,7 +124,7 @@ const Tab = ({ label, active, onClick }) => (
     cursor: "pointer", fontFamily: "inherit",
   }}>{label}</button>
 );
-
+ 
 const BottomSheet = ({ children, onClose, title, subtitle }) => (
   <div style={{
     position: "fixed", inset: 0, background: "#000b", zIndex: 200,
@@ -149,7 +149,7 @@ const BottomSheet = ({ children, onClose, title, subtitle }) => (
     </div>
   </div>
 );
-
+ 
 const TextInput = ({ label, value, onChange, placeholder }) => (
   <div>
     {label && <div style={{ color: COLORS.muted, fontSize: 11, fontWeight: 700, marginBottom: 6 }}>{label}</div>}
@@ -161,7 +161,7 @@ const TextInput = ({ label, value, onChange, placeholder }) => (
       }} />
   </div>
 );
-
+ 
 const PrimaryBtn = ({ children, onClick, disabled }) => (
   <button onClick={onClick} disabled={disabled} style={{
     width: "100%", padding: "16px", borderRadius: 14,
@@ -171,25 +171,25 @@ const PrimaryBtn = ({ children, onClick, disabled }) => (
     fontFamily: "inherit", transition: "all 0.2s",
   }}>{children}</button>
 );
-
+ 
 // ── グループ作成モーダル ────────────────────
 function CreateGroupModal({ onSave, onClose }) {
   const [name, setName] = useState("");
   const [members, setMembers] = useState([{ id: genId(), name: "", age: "", job: "", emoji: "😊" }]);
   const EMOJIS = ["😊","😎","🤩","🥳","😇","🫡","🤓","🥰","😄","🌟","🔥","💪","⚡","🎯","🏃"];
-
+ 
   const addMember = () => setMembers(p => [...p, { id: genId(), name: "", age: "", job: "", emoji: "😊" }]);
   const removeMember = (id) => setMembers(p => p.filter(m => m.id !== id));
   const updateMember = (id, field, val) =>
     setMembers(p => p.map(m => m.id === id ? { ...m, [field]: val } : m));
-
+ 
   const canSave = name.trim() && members.every(m => m.name.trim());
-
+ 
   return (
     <BottomSheet title="グループを作成" subtitle="自分側のメンバーを登録します" onClose={onClose}>
       <div style={{ display: "grid", gap: 16 }}>
         <TextInput label="グループ名" value={name} onChange={setName} placeholder="例：田中チーム🍻" />
-
+ 
         <div>
           <div style={{ color: COLORS.muted, fontSize: 11, fontWeight: 700, marginBottom: 10 }}>
             メンバー（{members.length}人）
@@ -251,7 +251,7 @@ function CreateGroupModal({ onSave, onClose }) {
             color: COLORS.muted, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
           }}>＋ メンバーを追加</button>
         </div>
-
+ 
         <PrimaryBtn onClick={() => canSave && onSave({ id: genId(), name, members })} disabled={!canSave}>
           グループを保存
         </PrimaryBtn>
@@ -259,24 +259,24 @@ function CreateGroupModal({ onSave, onClose }) {
     </BottomSheet>
   );
 }
-
+ 
 // ── カレンダーコンポーネント ────────────────
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 const TIME_SLOTS = ["18:00〜", "18:30〜", "19:00〜", "19:30〜", "20:00〜"];
-
+ 
 function MiniCalendar({ selectedDates, onToggleDate }) {
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth()); // 0-indexed
-
+ 
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const todayStr = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
-
+ 
   const toKey = (y, m, d) => `${y}-${m}-${d}`;
   const isPast = (d) => new Date(viewYear, viewMonth, d) < new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const isSelected = (d) => selectedDates.some(s => s.dateKey === toKey(viewYear, viewMonth, d));
-
+ 
   const prevMonth = () => {
     if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
     else setViewMonth(m => m - 1);
@@ -285,11 +285,11 @@ function MiniCalendar({ selectedDates, onToggleDate }) {
     if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); }
     else setViewMonth(m => m + 1);
   };
-
+ 
   const cells = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-
+ 
   return (
     <div style={{ background: COLORS.card, borderRadius: 14, padding: "14px", border: `1px solid ${COLORS.border}` }}>
       {/* 月ナビ */}
@@ -306,7 +306,7 @@ function MiniCalendar({ selectedDates, onToggleDate }) {
           color: COLORS.muted, width: 32, height: 32, cursor: "pointer", fontSize: 16,
         }}>›</button>
       </div>
-
+ 
       {/* 曜日ヘッダー */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 6 }}>
         {WEEKDAYS.map((w, i) => (
@@ -316,7 +316,7 @@ function MiniCalendar({ selectedDates, onToggleDate }) {
           }}>{w}</div>
         ))}
       </div>
-
+ 
       {/* 日付グリッド */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 3 }}>
         {cells.map((d, i) => {
@@ -341,7 +341,7 @@ function MiniCalendar({ selectedDates, onToggleDate }) {
     </div>
   );
 }
-
+ 
 // ── 時間選択ポップオーバー ──────────────────
 function TimeSelector({ dateEntry, onSetTime, onRemove }) {
   const dow = WEEKDAYS[dateEntry.dow];
@@ -374,7 +374,7 @@ function TimeSelector({ dateEntry, onSetTime, onRemove }) {
     </div>
   );
 }
-
+ 
 // ── イベント作成モーダル ────────────────────
 function CreateEventModal({ groups, onSave, onClose }) {
   const [step, setStep] = useState(1); // 1:タイトル&グループ  2:候補日
@@ -382,9 +382,9 @@ function CreateEventModal({ groups, onSave, onClose }) {
   const [selectedGroupId, setSelectedGroupId] = useState(null);
   // selectedDates: [{ dateKey, year, month, day, dow, time }]
   const [selectedDates, setSelectedDates] = useState([]);
-
+ 
   const selectedGroup = groups.find(g => g.id === selectedGroupId);
-
+ 
   const toggleDate = (dateKey, year, month, day, dow) => {
     setSelectedDates(prev => {
       const exists = prev.find(d => d.dateKey === dateKey);
@@ -392,16 +392,16 @@ function CreateEventModal({ groups, onSave, onClose }) {
       return [...prev, { dateKey, year, month, day, dow, time: "19:00〜" }];
     });
   };
-
+ 
   const setTime = (dateKey, time) => {
     setSelectedDates(prev => prev.map(d => d.dateKey === dateKey ? { ...d, time } : d));
   };
-
+ 
   const removeDate = (dateKey) => setSelectedDates(prev => prev.filter(d => d.dateKey !== dateKey));
-
+ 
   const canStep1 = title.trim() && selectedGroupId;
   const canSave = selectedDates.length > 0;
-
+ 
   const handleSave = () => {
     if (!canSave || !selectedGroup) return;
     const WDAYS = ["日", "月", "火", "水", "木", "金", "土"];
@@ -418,7 +418,7 @@ function CreateEventModal({ groups, onSave, onClose }) {
       theirGroup: [], dates: eventDates,
     });
   };
-
+ 
   return (
     <BottomSheet
       title={step === 1 ? "合コンを作成" : "📅 候補日を選ぶ"}
@@ -428,7 +428,7 @@ function CreateEventModal({ groups, onSave, onClose }) {
       {step === 1 ? (
         <div style={{ display: "grid", gap: 18 }}>
           <TextInput label="タイトル" value={title} onChange={setTitle} placeholder="例：夏の合コン🍺" />
-
+ 
           <div>
             <div style={{ color: COLORS.muted, fontSize: 11, fontWeight: 700, marginBottom: 8 }}>自分側グループを選ぶ</div>
             {groups.length === 0 ? (
@@ -465,7 +465,7 @@ function CreateEventModal({ groups, onSave, onClose }) {
               </div>
             )}
           </div>
-
+ 
           <PrimaryBtn onClick={() => canStep1 && setStep(2)} disabled={!canStep1}>
             次へ：候補日を選ぶ →
           </PrimaryBtn>
@@ -477,9 +477,9 @@ function CreateEventModal({ groups, onSave, onClose }) {
             background: "none", border: "none", color: COLORS.muted,
             fontSize: 13, cursor: "pointer", padding: 0, fontFamily: "inherit", textAlign: "left",
           }}>← タイトル・グループの設定に戻る</button>
-
+ 
           <MiniCalendar selectedDates={selectedDates} onToggleDate={toggleDate} />
-
+ 
           {/* 選択済み日程 */}
           {selectedDates.length > 0 && (
             <div>
@@ -495,7 +495,7 @@ function CreateEventModal({ groups, onSave, onClose }) {
               </div>
             </div>
           )}
-
+ 
           <PrimaryBtn onClick={handleSave} disabled={!canSave}>
             {canSave ? `この${selectedDates.length}日程で合コンを作成 🎉` : "候補日を1日以上選んでください"}
           </PrimaryBtn>
@@ -504,7 +504,7 @@ function CreateEventModal({ groups, onSave, onClose }) {
     </BottomSheet>
   );
 }
-
+ 
 // ── 相手メンバー追加モーダル ────────────────
 function AddTheirMemberModal({ onSave, onClose }) {
   const [name, setName] = useState("");
@@ -512,7 +512,7 @@ function AddTheirMemberModal({ onSave, onClose }) {
   const [job, setJob] = useState("");
   const [emoji, setEmoji] = useState("🌸");
   const EMOJIS = ["🌸","💫","✨","🎀","🌺","🦋","🌙","⭐","🍀","🎵","💎","🌈","🦄","🍓","🌻"];
-
+ 
   const canSave = name.trim();
   return (
     <BottomSheet title="相手メンバーを追加" subtitle="相手グループのメンバーを入力します" onClose={onClose}>
@@ -556,14 +556,14 @@ function AddTheirMemberModal({ onSave, onClose }) {
     </BottomSheet>
   );
 }
-
+ 
 // ── 回答入力モーダル ────────────────────────
 function AnswerInputModal({ event, member, onSave, onClose }) {
   const [answers, setAnswers] = useState(
     Object.fromEntries(event.dates.map(d => [d.id, d.answers[member.id] || ""]))
   );
   const allFilled = event.dates.every(d => answers[d.id]);
-
+ 
   return (
     <BottomSheet title="スケジュール入力" subtitle={`${member.emoji} ${member.name}さんの回答`} onClose={onClose}>
       <div style={{ display: "grid", gap: 14, marginBottom: 20 }}>
@@ -595,7 +595,7 @@ function AnswerInputModal({ event, member, onSave, onClose }) {
     </BottomSheet>
   );
 }
-
+ 
 // ── メンバー選択モーダル ────────────────────
 function MemberSelectModal({ event, onSelect, onClose }) {
   const all = [...event.myGroup, ...event.theirGroup];
@@ -623,7 +623,7 @@ function MemberSelectModal({ event, onSelect, onClose }) {
     </BottomSheet>
   );
 }
-
+ 
 // ── 候補日編集モーダル ──────────────────────
 function EditDatesModal({ event, onSave, onClose }) {
   const now = new Date();
@@ -631,7 +631,7 @@ function EditDatesModal({ event, onSave, onClose }) {
   const [viewMonth, setViewMonth] = useState(now.getMonth());
   const WEEKDAYS2 = ["日","月","火","水","木","金","土"];
   const TIME_SLOTS2 = ["18:00〜","18:30〜","19:00〜","19:30〜","20:00〜"];
-
+ 
   const parseExisting = () => event.dates.map(d => {
     const m = d.label.match(/^(\d+)\/(\d+)/);
     const dow = d.label.match(/（(.)）/);
@@ -645,16 +645,16 @@ function EditDatesModal({ event, onSave, onClose }) {
       existingId: d.id, existingAnswers: d.answers,
     };
   });
-
+ 
   const [selectedDates, setSelectedDates] = useState(parseExisting);
-
+ 
   const toKey = (y, m, d) => `${y}-${m}-${d}`;
   const isPast = (d) => new Date(viewYear, viewMonth, d) < new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const isSelected = (d) => selectedDates.some(s => s.dateKey === toKey(viewYear, viewMonth, d));
-
+ 
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-
+ 
   const toggleDate = (dateKey, year, month, day, dow) => {
     setSelectedDates(prev => {
       const exists = prev.find(d => d.dateKey === dateKey);
@@ -666,19 +666,19 @@ function EditDatesModal({ event, onSave, onClose }) {
       return [...prev, { dateKey, year, month, day, dow, time: "19:00〜", existingId: existing?.id || null, existingAnswers: existing?.answers || {} }];
     });
   };
-
+ 
   const setTime = (dateKey, time) => setSelectedDates(prev => prev.map(d => d.dateKey === dateKey ? { ...d, time } : d));
   const removeDate = (dateKey) => setSelectedDates(prev => prev.filter(d => d.dateKey !== dateKey));
-
+ 
   const prevMonth = () => { if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); } else setViewMonth(m => m - 1); };
   const nextMonth = () => { if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); } else setViewMonth(m => m + 1); };
-
+ 
   const cells = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-
+ 
   const canSave = selectedDates.length > 0;
-
+ 
   const handleSave = () => {
     if (!canSave) return;
     const allMembers = [...event.myGroup, ...event.theirGroup];
@@ -691,7 +691,7 @@ function EditDatesModal({ event, onSave, onClose }) {
       }));
     onSave(newDates);
   };
-
+ 
   return (
     <BottomSheet title="候補日を編集" subtitle="日付をタップして追加・削除できます" onClose={onClose}>
       <div style={{ display: "grid", gap: 16 }}>
@@ -723,7 +723,7 @@ function EditDatesModal({ event, onSave, onClose }) {
             })}
           </div>
         </div>
-
+ 
         {selectedDates.length > 0 && (
           <div>
             <div style={{ color: COLORS.muted, fontSize: 11, fontWeight: 700, marginBottom: 8 }}>候補日（{selectedDates.length}件）</div>
@@ -761,12 +761,12 @@ function EditDatesModal({ event, onSave, onClose }) {
     </BottomSheet>
   );
 }
-
+ 
 // ── 日程確定モーダル ────────────────────────
 function ConfirmDateModal({ scores, onConfirm, onClose }) {
   const maxScore = Math.max(...scores.map(s => s.score));
   const [selected, setSelected] = useState(scores.find(s => s.score === maxScore)?.id ?? scores[0].id);
-
+ 
   return (
     <BottomSheet title="日程を確定する" subtitle="確定する日程を選んでください" onClose={onClose}>
       <div style={{ display: "grid", gap: 10, marginBottom: 20 }}>
@@ -810,7 +810,7 @@ function ConfirmDateModal({ scores, onConfirm, onClose }) {
     </BottomSheet>
   );
 }
-
+ 
 // ── 日程調整ビュー ──────────────────────────
 function ScheduleView({ event, onAnswerUpdate, onConfirmDate, onRevertDate, onUpdateDates }) {
   const allMembers = [...event.myGroup, ...event.theirGroup];
@@ -822,30 +822,30 @@ function ScheduleView({ event, onAnswerUpdate, onConfirmDate, onRevertDate, onUp
   const [showConfirm, setShowConfirm] = useState(false);
   const [showEditDates, setShowEditDates] = useState(false);
   const [toast, setToast] = useState(null); // null | "saved" | "confirmed"
-
+ 
   const handleSave = (answers) => {
     onAnswerUpdate(event.id, selectedMember.id, answers);
     setSelectedMember(null);
     setToast("saved");
     setTimeout(() => setToast(null), 2500);
   };
-
+ 
   const handleConfirm = (date) => {
     onConfirmDate(event.id, date.label);
     setShowConfirm(false);
     setToast("confirmed");
     setTimeout(() => setToast(null), 3000);
   };
-
+ 
   const handleUpdateDates = (newDates) => {
     onUpdateDates(event.id, newDates);
     setShowEditDates(false);
     setToast("updated");
     setTimeout(() => setToast(null), 2500);
   };
-
+ 
   const isConfirmed = event.status === "日程確定";
-
+ 
   return (
     <div>
       {/* 確定済みバナー */}
@@ -862,7 +862,7 @@ function ScheduleView({ event, onAnswerUpdate, onConfirmDate, onRevertDate, onUp
           </div>
         </div>
       )}
-
+ 
       {/* 調整中に戻すボタン（確定時のみ） */}
       {isConfirmed && (
         <button onClick={() => onRevertDate(event.id)} style={{
@@ -872,7 +872,7 @@ function ScheduleView({ event, onAnswerUpdate, onConfirmDate, onRevertDate, onUp
           cursor: "pointer", fontFamily: "inherit",
         }}>↩ 調整中に戻す</button>
       )}
-
+ 
       {/* 候補日を編集するボタン（常時表示） */}
       <button onClick={() => setShowEditDates(true)} style={{
         width: "100%", padding: "11px", marginBottom: 10, borderRadius: 12,
@@ -881,7 +881,7 @@ function ScheduleView({ event, onAnswerUpdate, onConfirmDate, onRevertDate, onUp
         cursor: "pointer", fontFamily: "inherit",
         display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
       }}>📅 候補日を編集する</button>
-
+ 
       {/* スケジュール入力ボタン（未確定時のみ） */}
       {!isConfirmed && (
         <button onClick={() => setShowMemberSelect(true)} style={{
@@ -891,7 +891,7 @@ function ScheduleView({ event, onAnswerUpdate, onConfirmDate, onRevertDate, onUp
           cursor: "pointer", fontFamily: "inherit",
         }}>✏️ 自分のスケジュールを入力する</button>
       )}
-
+ 
       {/* トースト */}
       {toast && (
         <div style={{
@@ -904,7 +904,7 @@ function ScheduleView({ event, onAnswerUpdate, onConfirmDate, onRevertDate, onUp
           {toast === "confirmed" ? "🎉 日程を確定しました！" : toast === "updated" ? "📅 候補日を更新しました！" : "✅ 回答を保存しました！"}
         </div>
       )}
-
+ 
       <p style={{ color: COLORS.muted, fontSize: 12, marginBottom: 12 }}>○=参加可　△=未定　×=不可</p>
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
@@ -951,7 +951,7 @@ function ScheduleView({ event, onAnswerUpdate, onConfirmDate, onRevertDate, onUp
           </tbody>
         </table>
       </div>
-
+ 
       {/* 最有力表示 ＋ 確定ボタン（未確定時のみ） */}
       {!isConfirmed && scores.length > 0 && maxScore > 0 && (
         <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
@@ -976,7 +976,7 @@ function ScheduleView({ event, onAnswerUpdate, onConfirmDate, onRevertDate, onUp
           </button>
         </div>
       )}
-
+ 
       {showMemberSelect && !selectedMember && (
         <MemberSelectModal event={event} onSelect={m => { setSelectedMember(m); setShowMemberSelect(false); }} onClose={() => setShowMemberSelect(false)} />
       )}
@@ -992,7 +992,7 @@ function ScheduleView({ event, onAnswerUpdate, onConfirmDate, onRevertDate, onUp
     </div>
   );
 }
-
+ 
 // ── メンバービュー（相手追加ボタン付き） ─────
 function MembersView({ event, onAddTheirMember }) {
   const [showAdd, setShowAdd] = useState(false);
@@ -1042,7 +1042,7 @@ function MembersView({ event, onAddTheirMember }) {
           )}
         </div>
       ))}
-
+ 
       {showAdd && (
         <AddTheirMemberModal
           onSave={m => { onAddTheirMember(m); setShowAdd(false); }}
@@ -1052,7 +1052,7 @@ function MembersView({ event, onAddTheirMember }) {
     </div>
   );
 }
-
+ 
 // ── 割り勘ビュー ────────────────────────────
 function SplitView({ event }) {
   const [total, setTotal] = useState("");
@@ -1064,7 +1064,7 @@ function SplitView({ event }) {
   const tN = parseFloat(total) || 0;
   const mV = parseFloat(maleAmt) || 0, fV = parseFloat(femaleAmt) || 0;
   const customTotal = mV * mC + fV * fC;
-
+ 
   return (
     <div style={{ display: "grid", gap: 18 }}>
       <div>
@@ -1132,12 +1132,12 @@ function SplitView({ event }) {
     </div>
   );
 }
-
+ 
 // ── 詳細画面 ────────────────────────────────
 function DetailView({ event, onBack, onAnswerUpdate, onAddTheirMember, onConfirmDate, onRevertDate, onUpdateDates }) {
   const [activeTab, setActiveTab] = useState("schedule");
   const cfg = STATUS_CONFIG[event.status];
-
+ 
   return (
     <div>
       <div style={{
@@ -1175,8 +1175,8 @@ function DetailView({ event, onBack, onAnswerUpdate, onAddTheirMember, onConfirm
     </div>
   );
 }
-
-
+ 
+ 
 // ── カレンダービュー ────────────────────────
 function CalendarView({ events, onSelect }) {
   const now = new Date();
@@ -1184,11 +1184,11 @@ function CalendarView({ events, onSelect }) {
   const [viewMonth, setViewMonth] = useState(now.getMonth());
   const [selectedDay, setSelectedDay] = useState(null);
   const [innerTab, setInnerTab] = useState("calendar"); // "calendar" | "list"
-
+ 
   const confirmed = events.filter(e => e.status === "日程確定" && e.confirmedDate);
   const completed = events.filter(e => e.status === "完了" && e.confirmedDate);
   const allFixed = [...confirmed, ...completed];
-
+ 
   // 確定日 → dayKey → イベント配列
   const dayMap = {};
   allFixed.forEach(ev => {
@@ -1198,11 +1198,11 @@ function CalendarView({ events, onSelect }) {
     if (!dayMap[key]) dayMap[key] = [];
     dayMap[key].push(ev);
   });
-
+ 
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const todayKey = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
-
+ 
   const prevMonth = () => {
     setSelectedDay(null);
     if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
@@ -1213,21 +1213,21 @@ function CalendarView({ events, onSelect }) {
     if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); }
     else setViewMonth(m => m + 1);
   };
-
+ 
   const WDAYS = ["日", "月", "火", "水", "木", "金", "土"];
   const cells = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-
+ 
   const selectedKey = selectedDay ? `${viewYear}-${viewMonth + 1}-${selectedDay}` : null;
   const selectedEvents = selectedKey ? (dayMap[selectedKey] || []) : [];
-
+ 
   const innerTabStyle = (active) => ({
     flex: 1, padding: "8px 0", background: active ? COLORS.accent : "transparent",
     color: active ? "#fff" : COLORS.muted, border: "none", borderRadius: 8,
     fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "inherit",
   });
-
+ 
   return (
     <div>
       {/* 内部タブ */}
@@ -1242,7 +1242,7 @@ function CalendarView({ events, onSelect }) {
           ✅ 日程確定一覧
         </button>
       </div>
-
+ 
       {innerTab === "calendar" ? (
         <div style={{ padding: "16px" }}>
           {/* カレンダー本体 */}
@@ -1263,7 +1263,7 @@ function CalendarView({ events, onSelect }) {
                 color: COLORS.muted, width: 36, height: 36, cursor: "pointer", fontSize: 18, fontFamily: "inherit",
               }}>›</button>
             </div>
-
+ 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 6 }}>
               {WDAYS.map((w, i) => (
                 <div key={w} style={{
@@ -1272,7 +1272,7 @@ function CalendarView({ events, onSelect }) {
                 }}>{w}</div>
               ))}
             </div>
-
+ 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 3 }}>
               {cells.map((d, i) => {
                 if (!d) return <div key={`e${i}`} />;
@@ -1284,7 +1284,7 @@ function CalendarView({ events, onSelect }) {
                 const hasConfirmed = evs.some(e => e.status === "日程確定");
                 const hasCompleted = evs.some(e => e.status === "完了");
                 const dotColor = hasConfirmed ? COLORS.accent3 : hasCompleted ? COLORS.muted : null;
-
+ 
                 return (
                   <button key={d}
                     onClick={() => setSelectedDay(isSel ? null : d)}
@@ -1308,7 +1308,7 @@ function CalendarView({ events, onSelect }) {
               })}
             </div>
           </div>
-
+ 
           {/* 選択日の表示 */}
           {selectedDay && (
             <div style={{ marginBottom: 8 }}>
@@ -1403,8 +1403,8 @@ function CalendarView({ events, onSelect }) {
     </div>
   );
 }
-
-
+ 
+ 
 // ── グループ管理画面 ─────────────────────────
 function GroupsView({ groups, onCreateGroup }) {
   const [showCreate, setShowCreate] = useState(false);
@@ -1449,7 +1449,7 @@ function GroupsView({ groups, onCreateGroup }) {
     </div>
   );
 }
-
+ 
 // ── ホーム一覧 ───────────────────────────────
 function HomeView({ events, groups, onSelect, onCreateEvent }) {
   const [filter, setFilter] = useState("すべて");
@@ -1459,7 +1459,7 @@ function HomeView({ events, groups, onSelect, onCreateEvent }) {
   const filtered = (filter === "すべて" ? events.filter(e => e.status !== "完了") : events.filter(e => e.status === filter))
     .slice()
     .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
-
+ 
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, padding: "16px 16px 0" }}>
@@ -1477,7 +1477,7 @@ function HomeView({ events, groups, onSelect, onCreateEvent }) {
           </div>
         ))}
       </div>
-
+ 
       <div style={{ display: "flex", gap: 6, padding: "14px 16px 10px", overflowX: "auto" }}>
         {filters.map(f => (
           <button key={f} onClick={() => setFilter(f)} style={{
@@ -1490,7 +1490,7 @@ function HomeView({ events, groups, onSelect, onCreateEvent }) {
           }}>{STATUS_CONFIG[f]?.icon || "🗂️"} {f}</button>
         ))}
       </div>
-
+ 
       <div style={{ padding: "0 16px", display: "grid", gap: 12 }}>
         {filtered.map(event => {
           const cfg = STATUS_CONFIG[event.status];
@@ -1499,7 +1499,7 @@ function HomeView({ events, groups, onSelect, onCreateEvent }) {
           const scores = event.dates.map(d => countScore(d.answers));
           const maxS = scores.length > 0 ? Math.max(...scores) : 0;
           const bestI = scores.indexOf(maxS);
-
+ 
           return (
             <div key={event.id} onClick={() => onSelect(event)} style={{
               background: COLORS.card, border: `1px solid ${COLORS.border}`,
@@ -1574,7 +1574,7 @@ function HomeView({ events, groups, onSelect, onCreateEvent }) {
           );
         })}
       </div>
-
+ 
       {/* FAB */}
       <div style={{ position: "fixed", bottom: 82, right: 20 }}>
         <button onClick={() => setShowCreate(true)} style={{
@@ -1584,7 +1584,7 @@ function HomeView({ events, groups, onSelect, onCreateEvent }) {
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>＋</button>
       </div>
-
+ 
       {showCreate && (
         <CreateEventModal
           groups={groups}
@@ -1596,16 +1596,16 @@ function HomeView({ events, groups, onSelect, onCreateEvent }) {
     </div>
   );
 }
-
+ 
 // ── ルート ───────────────────────────────────
 export default function App() {
   const [events, setEvents] = useState(() => applyAutoComplete(INITIAL_EVENTS));
   const [groups, setGroups] = useState(INITIAL_GROUPS);
   const [selectedEventId, setSelectedEventId] = useState(null);
   const [page, setPage] = useState("home"); // "home" | "groups"
-
+ 
   const selectedEvent = events.find(e => e.id === selectedEventId);
-
+ 
   // 1分ごとに自動完了チェック
   useEffect(() => {
     const timer = setInterval(() => {
@@ -1613,14 +1613,14 @@ export default function App() {
     }, 60 * 1000);
     return () => clearInterval(timer);
   }, []);
-
+ 
   const handleAnswerUpdate = (eventId, memberId, answers) => {
     setEvents(prev => prev.map(ev => ev.id !== eventId ? ev : {
       ...ev,
       dates: ev.dates.map(d => ({ ...d, answers: { ...d.answers, [memberId]: answers[d.id] } })),
     }));
   };
-
+ 
   const handleAddTheirMember = (eventId, member) => {
     setEvents(prev => prev.map(ev => ev.id !== eventId ? ev : {
       ...ev,
@@ -1628,7 +1628,7 @@ export default function App() {
       dates: ev.dates.map(d => ({ ...d, answers: { ...d.answers, [member.id]: "" } })),
     }));
   };
-
+ 
   const handleConfirmDate = (eventId, dateLabel) => {
     setEvents(prev => applyAutoComplete(prev.map(ev => ev.id !== eventId ? ev : {
       ...ev,
@@ -1636,7 +1636,7 @@ export default function App() {
       confirmedDate: dateLabel,
     })));
   };
-
+ 
   const handleUpdateDates = (eventId, newDates) => {
     setEvents(prev => prev.map(ev => ev.id !== eventId ? ev : {
       ...ev,
@@ -1645,7 +1645,7 @@ export default function App() {
       dates: newDates,
     }));
   };
-
+ 
   const handleRevertDate = (eventId) => {
     setEvents(prev => prev.map(ev => ev.id !== eventId ? ev : {
       ...ev,
@@ -1653,7 +1653,7 @@ export default function App() {
       confirmedDate: null,
     }));
   };
-
+ 
   const navBtnStyle = (active) => ({
     flex: 1, padding: "10px 0", background: "none", border: "none",
     color: active ? COLORS.accent : COLORS.muted,
@@ -1661,16 +1661,16 @@ export default function App() {
     borderTop: `2px solid ${active ? COLORS.accent : "transparent"}`,
     display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
   });
-
+ 
   const [appTitle, setAppTitle] = useState("Gocal");
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
-
+ 
   return (
     <div style={{
       minHeight: "100vh", background: COLORS.bg, color: COLORS.text,
       fontFamily: "'Hiragino Sans', 'Noto Sans JP', sans-serif",
-      maxWidth: 480, margin: "0 auto", paddingBottom: 100,
+      maxWidth: "100%", margin: "0 auto", paddingBottom: 100,
     }}>
       {/* ヘッダー */}
       {!selectedEvent && (
@@ -1724,7 +1724,7 @@ export default function App() {
           </div>
         </div>
       )}
-
+ 
       {/* コンテンツ */}
       {selectedEvent ? (
         <DetailView
@@ -1754,12 +1754,12 @@ export default function App() {
           onCreateGroup={g => setGroups(p => [...p, g])}
         />
       )}
-
+ 
       {/* ボトムナビ */}
       {!selectedEvent && (
         <div style={{
           position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
-          width: "100%", maxWidth: 480, background: COLORS.surface,
+          width: "100%", maxWidth: "100%", background: COLORS.surface,
           borderTop: `1px solid ${COLORS.border}`, display: "flex", zIndex: 20,
         }}>
           <button style={navBtnStyle(page === "home")} onClick={() => setPage("home")}>
